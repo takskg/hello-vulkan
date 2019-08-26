@@ -24,6 +24,9 @@
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\VulkanAppBase.cpp">
+      <Filter>ソース ファイル\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan\VulkanAppBase.h">
