@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <array>
+#include <sstream>
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -36,7 +37,9 @@ public:
 	void terminate();
 
 public:
-	virtual void render() {}
+	virtual
+	void
+	render();
 	virtual void prepare() { }
 	virtual void cleanup() { }
 	virtual void makeCommand(VkCommandBuffer command) { }
@@ -67,11 +70,14 @@ private:
 	void
 	_CreateViews();
 	void
+	_CreateRenderPass();
+	void
 	_CreateFramebuffer();
 	void
 	_CreateCommandBuffers();
 	void
 	_CreateSemaphores();
+
 
 private:
 	VkInstance m_vkInstance;
@@ -105,4 +111,17 @@ private:
 	std::vector<VkCommandBuffer> m_commands;
 
 	uint32 m_graphicsQueueIndex;
+	uint32  m_imageIndex;
+
+
+private://Debug
+	void
+	_EnableDebugReport();
+	void
+	_DisableDebugReport();
+
+	PFN_vkCreateDebugReportCallbackEXT	m_vkCreateDebugReportCallbackEXT;
+	PFN_vkDebugReportMessageEXT	m_vkDebugReportMessageEXT;
+	PFN_vkDestroyDebugReportCallbackEXT m_vkDestroyDebugReportCallbackEXT;
+	VkDebugReportCallbackEXT  m_debugReport;
 };

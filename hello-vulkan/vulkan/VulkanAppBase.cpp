@@ -1,5 +1,39 @@
 #include "vulkan/VulkanAppBase.h"
 
+#define GetInstanceProcAddr(FuncName) \
+  m_##FuncName = reinterpret_cast<PFN_##FuncName>(vkGetInstanceProcAddr(m_vkInstance, #FuncName))
+
+
+static VkBool32 VKAPI_CALL DebugReportCallback(
+	VkDebugReportFlagsEXT flags,
+	VkDebugReportObjectTypeEXT objactTypes,
+	uint64_t object,
+	size_t	location,
+	int32_t messageCode,
+	const char* pLayerPrefix,
+	const char* pMessage,
+	void* pUserData)
+{
+	VkBool32 ret = VK_FALSE;
+	if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT ||
+		flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+	{
+		ret = VK_TRUE;
+	}
+	std::stringstream ss;
+	if (pLayerPrefix)
+	{
+		ss << "[" << pLayerPrefix << "] ";
+	}
+	ss << pMessage << std::endl;
+
+	OutputDebugStringA(ss.str().c_str());
+
+	return ret;
+}
+
+
+
 
 VulkanAppBase::
 VulkanAppBase()
@@ -27,6 +61,11 @@ VulkanAppBase()
 , m_presentCompletedSem()
 , m_commands()
 , m_graphicsQueueIndex(0)
+, m_imageIndex(0)
+, m_vkCreateDebugReportCallbackEXT()
+, m_vkDebugReportMessageEXT()
+, m_vkDestroyDebugReportCallbackEXT()
+, m_debugReport()
 {
 
 }
@@ -45,8 +84,12 @@ initialize(GLFWwindow* window, const char* appName)
 
 	//デバイス選択
 	_SelectPhysicalDevice();
-
 	m_graphicsQueueIndex = _SearchGraphicsQueueIndex();
+
+#ifdef _DEBUG
+	// デバッグレポート関数のセット.
+	_EnableDebugReport();
+#endif
 
 	//デバイス作成
 	_CreateDevice();
@@ -62,6 +105,9 @@ initialize(GLFWwindow* window, const char* appName)
 	_CreateDepthBuffer();
 	//スワップチェインイメージとデプスバッファへのImageViewを生成
 	_CreateViews();
+
+	//レンダーパス作成
+	_CreateRenderPass();
 
 	//フレームバッファ作成
 	_CreateFramebuffer();
@@ -115,21 +161,105 @@ terminate()
 	vkDestroySurfaceKHR(m_vkInstance, m_surface, nullptr);
 	vkDestroyDevice(m_vkDevice, nullptr);
 #ifdef _DEBUG
-	//disableDebugReport();
+	_DisableDebugReport();
 #endif
 	vkDestroyInstance(m_vkInstance, nullptr);
+}
+void VulkanAppBase::
+render()
+{
+	uint32_t nextImageIndex = 0;
+	vkAcquireNextImageKHR(m_vkDevice, m_swapchain, UINT64_MAX, m_presentCompletedSem, VK_NULL_HANDLE, &nextImageIndex);
+	auto commandFence = m_fences[nextImageIndex];
+	vkWaitForFences(m_vkDevice, 1, &commandFence, VK_TRUE, UINT64_MAX);
+
+	// クリア値
+	std::array<VkClearValue, 2> clearValue = {
+	  { {0.5f, 0.25f, 0.25f, 0.0f}, // for Color
+		{1.0f, 0 } // for Depth
+	  }
+	};
+
+	VkRenderPassBeginInfo renderPassBI{};
+	renderPassBI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBI.renderPass = m_renderPass;
+	renderPassBI.framebuffer = m_framebuffers[nextImageIndex];
+	renderPassBI.renderArea.offset = VkOffset2D{ 0, 0 };
+	renderPassBI.renderArea.extent = m_swapchainExtent;
+	renderPassBI.pClearValues = clearValue.data();
+	renderPassBI.clearValueCount = uint32_t(clearValue.size());
+
+	// コマンドバッファ・レンダーパス開始
+	VkCommandBufferBeginInfo commandBI{};
+	commandBI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	auto& command = m_commands[nextImageIndex];
+	vkBeginCommandBuffer(command, &commandBI);
+	vkCmdBeginRenderPass(command, &renderPassBI, VK_SUBPASS_CONTENTS_INLINE);
+
+	m_imageIndex = nextImageIndex;
+	makeCommand(command);
+
+	// コマンド・レンダーパス終了
+	vkCmdEndRenderPass(command);
+	vkEndCommandBuffer(command);
+
+	// コマンドを実行（送信)
+	VkSubmitInfo submitInfo{};
+	VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &command;
+	submitInfo.pWaitDstStageMask = &waitStageMask;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &m_presentCompletedSem;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &m_renderCompletedSem;
+	vkResetFences(m_vkDevice, 1, &commandFence);
+	vkQueueSubmit(m_vkQueue, 1, &submitInfo, commandFence);
+
+	// Present 処理
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &m_swapchain;
+	presentInfo.pImageIndices = &nextImageIndex;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &m_renderCompletedSem;
+	vkQueuePresentKHR(m_vkQueue, &presentInfo);
 }
 
 
 
 
 
+void VulkanAppBase::
+_EnableDebugReport()
+{
+	GetInstanceProcAddr(vkCreateDebugReportCallbackEXT);
+	GetInstanceProcAddr(vkDebugReportMessageEXT);
+	GetInstanceProcAddr(vkDestroyDebugReportCallbackEXT);
+
+	VkDebugReportFlagsEXT flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+
+	VkDebugReportCallbackCreateInfoEXT drcCI{};
+	drcCI.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	drcCI.flags = flags;
+	drcCI.pfnCallback = &DebugReportCallback;
+	m_vkCreateDebugReportCallbackEXT(m_vkInstance, &drcCI, nullptr, &m_debugReport);
+}
+void VulkanAppBase::
+_DisableDebugReport()
+{
+	if (m_vkDestroyDebugReportCallbackEXT)
+	{
+		m_vkDestroyDebugReportCallbackEXT(m_vkInstance, m_debugReport, nullptr);
+	}
+}
 
 bool VulkanAppBase::
 _CreateInstance(const char* appName)
 {
-	std::vector<const char*> extentions;
-
+	std::vector<const char*> extensions;
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = appName;
@@ -137,15 +267,34 @@ _CreateInstance(const char* appName)
 	appInfo.apiVersion = VK_API_VERSION_1_1;
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 
+	// 拡張情報の取得.
+	std::vector<VkExtensionProperties> props;
+	{
+		uint32_t count = 0;
+		vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+		props.resize(count);
+		vkEnumerateInstanceExtensionProperties(nullptr, &count, props.data());
+
+		for (const auto& v : props)
+		{
+			extensions.push_back(v.extensionName);
+		}
+	}
+
+	VkInstanceCreateInfo ci{};
+	ci.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	ci.enabledExtensionCount = uint32_t(extensions.size());
+	ci.ppEnabledExtensionNames = extensions.data();
+	ci.pApplicationInfo = &appInfo;
+#ifdef _DEBUG
+	// デバッグビルド時には検証レイヤーを有効化
 	const char* layers[] = { "VK_LAYER_LUNARG_standard_validation" };
-	VkInstanceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.enabledLayerCount = 1;
-	createInfo.ppEnabledLayerNames = layers;
-	createInfo.enabledExtensionCount = static_cast<uint32>(extentions.size());
-	createInfo.ppEnabledExtensionNames = extentions.data();
-	createInfo.pApplicationInfo = &appInfo;
-	VkResult result = vkCreateInstance(&createInfo, nullptr, &m_vkInstance);
+	ci.enabledLayerCount = 1;
+	ci.ppEnabledLayerNames = layers;
+#endif
+
+	// インスタンス生成
+	auto result = vkCreateInstance(&ci, nullptr, &m_vkInstance);
 
 	return true;
 }
@@ -188,7 +337,7 @@ _CreateDevice(void)
 {
 	const float32 defaultQueuePriority = 1.0f;
 	VkDeviceQueueCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	createInfo.queueFamilyIndex = m_graphicsQueueIndex;
 	createInfo.queueCount = 1;
 	createInfo.pQueuePriorities = &defaultQueuePriority;
@@ -383,6 +532,57 @@ _CreateViews()
 		ci.image = m_depthBuffer;
 		auto result = vkCreateImageView(m_vkDevice, &ci, nullptr, &m_depthBufferView);
 	}
+}
+
+void VulkanAppBase::
+_CreateRenderPass()
+{
+	VkRenderPassCreateInfo ci{};
+	ci.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+
+	std::array<VkAttachmentDescription, 2> attachments;
+	auto& colorTarget = attachments[0];
+	auto& depthTarget = attachments[1];
+
+	colorTarget = VkAttachmentDescription{};
+	colorTarget.format = m_surfaceFormat.format;
+	colorTarget.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorTarget.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorTarget.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorTarget.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorTarget.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorTarget.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorTarget.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	depthTarget = VkAttachmentDescription{};
+	depthTarget.format = VK_FORMAT_D32_SFLOAT;
+	depthTarget.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthTarget.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depthTarget.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depthTarget.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthTarget.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthTarget.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthTarget.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colorReference{}, depthReference{};
+	colorReference.attachment = 0;
+	colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	depthReference.attachment = 1;
+	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpassDesc{};
+	subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDesc.colorAttachmentCount = 1;
+	subpassDesc.pColorAttachments = &colorReference;
+	subpassDesc.pDepthStencilAttachment = &depthReference;
+
+	ci.attachmentCount = uint32_t(attachments.size());
+	ci.pAttachments = attachments.data();
+	ci.subpassCount = 1;
+	ci.pSubpasses = &subpassDesc;
+
+	auto result = vkCreateRenderPass(m_vkDevice, &ci, nullptr, &m_renderPass);
 }
 
 void VulkanAppBase::
