@@ -27,9 +27,15 @@
     <ClCompile Include="vulkan\VulkanAppBase.cpp">
       <Filter>ソース ファイル\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="vulkan\TriangleApp.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan\VulkanAppBase.h">
+      <Filter>ソース ファイル\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan\TriangleApp.h">
       <Filter>ソース ファイル\vulkan</Filter>
     </ClInclude>
   </ItemGroup>

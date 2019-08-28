@@ -1,5 +1,5 @@
 
-#include "vulkan/VulkanAppBase.h"
+#include "vulkan/TriangleApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -14,7 +14,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 	// Vulkanèâä˙âª
-	VulkanAppBase theApp;
+	TriangleApp theApp;
 	theApp.initialize(window, AppTitle);
 	while (glfwWindowShouldClose(window) == GLFW_FALSE)
 	{

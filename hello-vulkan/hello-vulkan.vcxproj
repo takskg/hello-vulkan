@@ -159,9 +159,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="vulkan\TriangleApp.cpp" />
     <ClCompile Include="vulkan\VulkanAppBase.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="vulkan\TriangleApp.h" />
     <ClInclude Include="vulkan\VulkanAppBase.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

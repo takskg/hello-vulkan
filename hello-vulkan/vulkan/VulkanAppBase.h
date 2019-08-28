@@ -46,7 +46,7 @@ public:
 
 
 
-private:
+protected:
 	bool
 	_CreateInstance(const char* appName);
 	void
@@ -79,7 +79,7 @@ private:
 	_CreateSemaphores();
 
 
-private:
+protected:
 	VkInstance m_vkInstance;
 	VkDevice m_vkDevice;
 	VkPhysicalDevice m_vkPhysicalDevice;
