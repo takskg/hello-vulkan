@@ -390,3 +390,5 @@ MigrationBackup/
 
 packages/
 dist/
+hello-vulkan/resources/shader/*.spv
+resources/shader/*.spv
