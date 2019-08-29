@@ -36,7 +36,7 @@
       <Filter>ソース ファイル\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="vulkan\TriangleApp.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
