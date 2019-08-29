@@ -5,10 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="ヘッダー ファイル">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="リソース ファイル">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -16,9 +12,21 @@
     <Filter Include="ソース ファイル\vulkan">
       <UniqueIdentifier>{f4d7ce78-f365-4607-9305-18ed815b8dd7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="リソース ファイル\shader">
+      <UniqueIdentifier>{a1df74b9-7d50-4614-9213-7dd98de16fa1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="resources\shader\ezshader.vert">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
+    <None Include="resources\shader\compile.bat">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
+    <None Include="resources\shader\ezshader.frag">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

@@ -114,6 +114,9 @@
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)dist\$(IntDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy $(SolutionDir)resources $(OutDir) /E /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -153,9 +156,15 @@
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)dist\$(IntDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy $(SolutionDir)resources $(OutDir) /E /Y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="resources\shader\compile.bat" />
+    <None Include="resources\shader\ezshader.frag" />
+    <None Include="resources\shader\ezshader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
