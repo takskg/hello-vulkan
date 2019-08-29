@@ -30,6 +30,8 @@ public:
 private:
 	BufferObj
 	_CreateBufferObj(uint32 size, VkBufferUsageFlags usage);
+	VkPipelineShaderStageCreateInfo
+	_LoadShaderModule(const wchar* fileName, VkShaderStageFlagBits stage);
 
 
 private:

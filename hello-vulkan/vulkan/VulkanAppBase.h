@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include <sstream>
+#include <fstream>
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -24,6 +25,7 @@ typedef uint32_t uint32;
 typedef uint64_t uint64;
 typedef float float32;
 typedef double float64;
+typedef wchar_t wchar;
 
 
 //Vulkan‚ÌÀ‘•‚Í‚±‚±‚É‰Ÿ‚µ‚ß‚é
