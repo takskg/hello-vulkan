@@ -27,6 +27,12 @@
     <None Include="resources\shader\ezshader.frag">
       <Filter>リソース ファイル\shader</Filter>
     </None>
+    <None Include="resources\shader\texshader.frag">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
+    <None Include="resources\shader\texshader.vert">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

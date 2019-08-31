@@ -165,6 +165,8 @@
     <None Include="resources\shader\compile.bat" />
     <None Include="resources\shader\ezshader.frag" />
     <None Include="resources\shader\ezshader.vert" />
+    <None Include="resources\shader\texshader.frag" />
+    <None Include="resources\shader\texshader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
