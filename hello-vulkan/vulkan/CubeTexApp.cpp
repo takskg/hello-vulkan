@@ -199,9 +199,15 @@ void CubeTexApp::
 makeCommand(VkCommandBuffer command)
 {
 	// ユニフォームバッファの中身を更新する.
+	static float32 camRotate = 0.0f;
+	camRotate += 0.5f;
+	if (camRotate > 360.0f)
+	{
+		camRotate -= 360.0f;
+	}
 	ShaderParameters shaderParam{};
 	shaderParam.mtxWorld = glm::rotate(glm::identity<glm::mat4>(), glm::radians(45.0f), glm::vec3(0, 1, 0));
-	shaderParam.mtxView = lookAtRH(vec3(0.0f, 3.0f, 5.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	shaderParam.mtxView = glm::rotate(lookAtRH(vec3(0.0f, 3.0f, 5.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)), glm::radians(camRotate), glm::vec3(0.0f, 1.0f, 0.0f));
 	shaderParam.mtxProj = perspective(glm::radians(60.0f), 640.0f / 480, 0.01f, 100.0f);
 	{
 		auto memory = m_uniformBuffers[m_imageIndex].memory;
