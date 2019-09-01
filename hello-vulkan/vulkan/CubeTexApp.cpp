@@ -136,8 +136,8 @@ prepare()
 	// シェーダーバイナリの読み込み
 	vector<VkPipelineShaderStageCreateInfo> shaderStages
 	{
-	  _LoadShaderModule(L"texshader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
-	  _LoadShaderModule(L"texshader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
+	  _LoadShaderModule(L"shader\\texshader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+	  _LoadShaderModule(L"shader\\texshader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT)
 	};
 
 	// パイプラインレイアウト
