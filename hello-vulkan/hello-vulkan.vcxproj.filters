@@ -15,6 +15,9 @@
     <Filter Include="リソース ファイル\shader">
       <UniqueIdentifier>{a1df74b9-7d50-4614-9213-7dd98de16fa1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\model">
+      <UniqueIdentifier>{d3c43b7b-f83e-4c56-979f-a76697f8bf87}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -47,6 +50,9 @@
     <ClCompile Include="vulkan\CubeTexApp.cpp">
       <Filter>ソース ファイル\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="model\GLTFReader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan\VulkanAppBase.h">
@@ -57,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="vulkan\CubeTexApp.h">
       <Filter>ソース ファイル\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="model\GLTFReader.h">
+      <Filter>ソース ファイル\model</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
