@@ -1,5 +1,5 @@
 
-#include "vulkan/CubeTexApp.h"
+#include "vulkan/ModelApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -14,7 +14,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 
 	// Vulkanèâä˙âª
-	CubeTexApp theApp;
+	ModelApp theApp;
 	theApp.initialize(window, AppTitle);
 	while (glfwWindowShouldClose(window) == GLFW_FALSE)
 	{
