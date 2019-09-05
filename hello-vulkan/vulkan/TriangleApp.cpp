@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "TriangleApp.h"
 
 using namespace glm;

@@ -1,8 +1,6 @@
+#include "pch.h"
 #include "ModelApp.h"
 #include "model/GLTFReader.h"
-#include <fstream>
-#include <array>
-#include <glm/gtc/matrix_transform.hpp>
 
 
 using namespace glm;
@@ -32,7 +30,7 @@ void ModelApp::
 prepare(void)
 {
 	//ÉÇÉfÉãì«Ç›çûÇ›
-	auto modelFilePath = filesystem::path("model\\alicia-solid.vrm");
+	auto modelFilePath = filesystem::path("model\\model.vrm");
 	if (modelFilePath.is_relative())
 	{
 		auto current = filesystem::current_path();

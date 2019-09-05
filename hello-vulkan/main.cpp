@@ -1,4 +1,4 @@
-
+#include "pch.h"
 #include "vulkan/ModelApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)

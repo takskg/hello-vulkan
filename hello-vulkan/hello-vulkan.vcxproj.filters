@@ -56,6 +56,9 @@
     <ClCompile Include="vulkan\ModelApp.cpp">
       <Filter>ソース ファイル\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkan\VulkanAppBase.h">
@@ -72,6 +75,9 @@
     </ClInclude>
     <ClInclude Include="vulkan\ModelApp.h">
       <Filter>ソース ファイル\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

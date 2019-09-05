@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "vulkan/VulkanAppBase.h"
 
 #define GetInstanceProcAddr(FuncName) \

@@ -1,7 +1,7 @@
-#pragma once
+#ifndef __Vulkan_ModelApp__
+#define __Vulkan_ModelApp__
+
 #include "vulkan/VulkanAppBase.h"
-#include <glm/glm.hpp>
-#include <GLTFSDK/GLTF.h>
 
 namespace Microsoft
 {
@@ -104,3 +104,7 @@ private:
 	VkPipeline m_pipelineOpaque;
 	VkPipeline m_pipelineAlpha;
 };
+
+
+
+#endif//__Vulkan_ModelApp__

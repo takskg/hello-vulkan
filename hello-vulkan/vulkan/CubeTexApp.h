@@ -1,7 +1,7 @@
-﻿#pragma once
+﻿#ifndef __Vulkan_CubeTexApp_H__
+#define __Vulkan_CubeTexApp_H__
 
 #include "vulkan/VulkanAppBase.h"
-#include <glm/glm.hpp>
 
 
 class CubeTexApp : public VulkanAppBase
@@ -83,3 +83,6 @@ private:
 	VkPipeline   m_pipeline;
 	uint32_t m_indexCount;
 };
+
+
+#endif//__Vulkan_CubeTexApp_H__
