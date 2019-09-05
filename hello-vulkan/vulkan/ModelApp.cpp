@@ -30,14 +30,16 @@ void ModelApp::
 prepare(void)
 {
 	//モデル読み込み
-	auto modelFilePath = filesystem::path("model\\model.vrm");
-	if (modelFilePath.is_relative())
-	{
-		auto current = filesystem::current_path();
-		current /= modelFilePath;
-		current.swap(modelFilePath);
-	}
-
+	wchar exePath[_MAX_PATH];
+	wstring filePath;
+	GetModuleFileName(NULL, exePath, _MAX_PATH);
+	wchar szDir[_MAX_DIR];
+	wchar szDrive[_MAX_DRIVE];
+	_wsplitpath_s(exePath, szDrive, _MAX_DRIVE, szDir, _MAX_DIR, nullptr, 0, nullptr, 0);
+	filePath.assign(szDrive);
+	filePath.append(szDir);
+	filePath.append(L"model\\model2.vrm");
+	auto modelFilePath = experimental::filesystem::path(filePath.c_str());
 	auto reader = make_unique<GLTFReader>(modelFilePath.parent_path());
 	auto glbStream = reader->GetInputStream(modelFilePath.filename().u8string());
 	auto glbResourceReader = make_shared<Microsoft::glTF::GLBResourceReader>(std::move(reader), std::move(glbStream));
@@ -52,6 +54,175 @@ prepare(void)
 
 	m_sampler = _CreateSampler();
 	_CreateDescriptorSet();
+
+	//頂点入力設定
+	VkVertexInputBindingDescription inputBinding{ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+	array<VkVertexInputAttributeDescription, 3> inputAttribs{
+		{
+			{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+			{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+			{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, uv)},
+		}
+	};
+	VkPipelineVertexInputStateCreateInfo vertexInputCi{};
+	vertexInputCi.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputCi.vertexBindingDescriptionCount = 1;
+	vertexInputCi.pVertexBindingDescriptions = &inputBinding;
+	vertexInputCi.vertexAttributeDescriptionCount = uint32(inputAttribs.size());
+	vertexInputCi.pVertexAttributeDescriptions = inputAttribs.data();
+
+	//ビューポート
+	VkViewport viewport;
+	{
+		viewport.x = 0.0f;
+		viewport.y = float32(m_swapchainExtent.height);
+		viewport.width = float32(m_swapchainExtent.width);
+		viewport.height = -1.0f * float32(m_swapchainExtent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+	}
+	VkRect2D scissor = {
+		{0,0},
+		m_swapchainExtent
+	};
+	VkPipelineViewportStateCreateInfo viewportCi{};
+	viewportCi.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportCi.viewportCount = 1;
+	viewportCi.pViewports = &viewport;
+	viewportCi.scissorCount = 1;
+	viewportCi.pScissors = &scissor;
+
+	//プリミティブトポロジー
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCi{};
+	inputAssemblyCi.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyCi.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	//ラスタライザーステート
+	VkPipelineRasterizationStateCreateInfo rasterizerCi{};
+	rasterizerCi.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizerCi.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizerCi.cullMode = VK_CULL_MODE_NONE;
+	rasterizerCi.lineWidth = 1.0f;
+
+	//マルチサンプル
+	VkPipelineMultisampleStateCreateInfo multisampleCi{};
+	multisampleCi.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampleCi.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	//パイプラインレイアウト
+	VkPipelineLayoutCreateInfo pipelineLayoutCi{};
+	pipelineLayoutCi.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCi.setLayoutCount = 1;
+	pipelineLayoutCi.pSetLayouts = &m_descriptorSetLayout;
+	vkCreatePipelineLayout(m_vkDevice, &pipelineLayoutCi, nullptr, &m_pipelineLayout);
+
+	//不透明用 パイプラインの構築
+	{
+		//ブレンディング
+		const auto colorWriteAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		VkPipelineColorBlendAttachmentState blendAttachment{};
+		blendAttachment.blendEnable = VK_TRUE;
+		blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		blendAttachment.colorWriteMask = colorWriteAll;
+		VkPipelineColorBlendStateCreateInfo cbCi{};
+		cbCi.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		cbCi.attachmentCount = 1;
+		cbCi.pAttachments = &blendAttachment;
+
+		//デプスステンシルステート
+		VkPipelineDepthStencilStateCreateInfo depthStencilCi{};
+		depthStencilCi.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencilCi.depthTestEnable = VK_TRUE;
+		depthStencilCi.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthStencilCi.depthWriteEnable = VK_TRUE;
+		depthStencilCi.stencilTestEnable = VK_FALSE;
+
+		//シェーダー読み込み
+		vector<VkPipelineShaderStageCreateInfo> shaderStages
+		{
+			_LoadShaderModule(L"shader\\texshaderUv.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+			_LoadShaderModule(L"shader\\texshaderOpaque.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT),
+		};
+		//パイプライン構築
+		VkGraphicsPipelineCreateInfo ci{};
+		ci.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		ci.stageCount = uint32(shaderStages.size());
+		ci.pStages = shaderStages.data();
+		ci.pInputAssemblyState = &inputAssemblyCi;
+		ci.pVertexInputState = &vertexInputCi;
+		ci.pRasterizationState = &rasterizerCi;
+		ci.pDepthStencilState = &depthStencilCi;
+		ci.pMultisampleState = &multisampleCi;
+		ci.pViewportState = &viewportCi;
+		ci.pColorBlendState = &cbCi;
+		ci.renderPass = m_renderPass;
+		ci.layout = m_pipelineLayout;
+		vkCreateGraphicsPipelines(m_vkDevice, VK_NULL_HANDLE, 1, &ci, nullptr, &m_pipelineOpaque);
+
+		for (const auto& v : shaderStages)
+		{
+			vkDestroyShaderModule(m_vkDevice, v.module, nullptr);
+		}
+	}
+
+	//半透明用 パイプラインの構築
+	{
+		//ブレンディング
+		const auto colorWriteAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		VkPipelineColorBlendAttachmentState blendAttachment{};
+		blendAttachment.blendEnable = VK_TRUE;
+		blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		blendAttachment.colorWriteMask = colorWriteAll;
+		VkPipelineColorBlendStateCreateInfo cbCi{};
+		cbCi.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		cbCi.attachmentCount = 1;
+		cbCi.pAttachments = &blendAttachment;
+
+		//デプスステンシルステート
+		VkPipelineDepthStencilStateCreateInfo depthStencilCi{};
+		depthStencilCi.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencilCi.depthTestEnable = VK_TRUE;
+		depthStencilCi.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthStencilCi.depthWriteEnable = VK_TRUE;
+		depthStencilCi.stencilTestEnable = VK_FALSE;
+
+		//シェーダー読み込み
+		vector<VkPipelineShaderStageCreateInfo> shaderStages
+		{
+			_LoadShaderModule(L"shader\\texshaderUv.vert.spv", VK_SHADER_STAGE_VERTEX_BIT),
+			_LoadShaderModule(L"shader\\texshaderAlpha.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT),
+		};
+		//パイプライン構築
+		VkGraphicsPipelineCreateInfo ci{};
+		ci.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		ci.stageCount = uint32(shaderStages.size());
+		ci.pStages = shaderStages.data();
+		ci.pInputAssemblyState = &inputAssemblyCi;
+		ci.pVertexInputState = &vertexInputCi;
+		ci.pRasterizationState = &rasterizerCi;
+		ci.pDepthStencilState = &depthStencilCi;
+		ci.pMultisampleState = &multisampleCi;
+		ci.pViewportState = &viewportCi;
+		ci.pColorBlendState = &cbCi;
+		ci.renderPass = m_renderPass;
+		ci.layout = m_pipelineLayout;
+		vkCreateGraphicsPipelines(m_vkDevice, VK_NULL_HANDLE, 1, &ci, nullptr, &m_pipelineAlpha);
+
+		for (const auto& v : shaderStages)
+		{
+			vkDestroyShaderModule(m_vkDevice, v.module, nullptr);
+		}
+	}
 }
 
 void ModelApp::
@@ -91,6 +262,63 @@ cleanup(void)
 void ModelApp::
 makeCommand(VkCommandBuffer command)
 {
+	using namespace Microsoft::glTF;
+
+	//ユニフォームバッファを更新
+	ShaderParameters shaderParam{};
+	shaderParam.mtxWorld = glm::identity<glm::mat4>();
+	shaderParam.mtxView = lookAtRH(vec3(0.0f, 1.5f, -1.0f), vec3(0.0f, 1.25f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	shaderParam.mtxProj = perspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.01f, 100.0f);
+	{
+		auto memory = m_uniformBuffers[m_imageIndex].memory;
+		void* p;
+		vkMapMemory(m_vkDevice, memory, 0, VK_WHOLE_SIZE, 0, &p);
+		memcpy(p, &shaderParam, sizeof(shaderParam));
+		vkUnmapMemory(m_vkDevice, memory);
+	}
+
+	for (auto mode : {ALPHA_OPAQUE, ALPHA_MASK, ALPHA_BLEND})
+	{
+		for (const auto& mesh : m_model.meshes)
+		{
+			//対応するメッシュのみを描画する
+			if (m_model.materials[mesh.materialIndex].alphaMode != mode)
+			{
+				continue;
+			}
+
+			//モードに応じてパイプラインを変更する
+			switch (mode)
+			{
+			case Microsoft::glTF::ALPHA_OPAQUE:
+				vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineOpaque);
+				break;
+			case Microsoft::glTF::ALPHA_BLEND:
+				vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineOpaque);
+				break;
+			case Microsoft::glTF::ALPHA_MASK:
+				vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineAlpha);
+				break;
+
+			default:
+				break;
+			}
+
+			//バッファオブジェクトのセット
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(command, 0, 1, &mesh.vertexBuffer.buffer, &offset);
+			vkCmdBindIndexBuffer(command, mesh.indexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
+
+			//ディスクリプタセットのセット
+			VkDescriptorSet descriptorSets[] = {
+				mesh.descriptoreSet[m_imageIndex]
+			};
+			vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, descriptorSets, 0, nullptr);
+
+			//メッシュの描画
+			vkCmdDrawIndexed(command, mesh.indexCount, 1, 0, 0, 0);
+		}
+	}
 }
 
 void ModelApp::
@@ -194,6 +422,7 @@ _CreateDescriptorSetLayout(void)
 	bindingUBO.binding = 0;
 	bindingUBO.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	bindingUBO.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	bindingUBO.descriptorCount = 1;
 	bindings.push_back(bindingUBO);
 
 	bindingTex.binding = 1;
