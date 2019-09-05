@@ -3,15 +3,14 @@
 #include <GLTFSDK/GLTF.h>
 #include <GLTFSDK/GLBResourceReader.h>
 #include <GLTFSDK/Deserialize.h>
-#include <iostream>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <sstream>
 
 
 class GLTFReader : public Microsoft::glTF::IStreamReader
 {
 public:
-	GLTFReader(std::filesystem::path pathBase);
+	GLTFReader(std::experimental::filesystem::path pathBase);
 	~GLTFReader();
 
 
@@ -21,5 +20,5 @@ public:
 
 
 private:
-	std::filesystem::path m_pathBase;
+	std::experimental::filesystem::path m_pathBase;
 };
