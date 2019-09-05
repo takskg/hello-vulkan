@@ -36,6 +36,15 @@
     <None Include="resources\shader\texshader.vert">
       <Filter>リソース ファイル\shader</Filter>
     </None>
+    <None Include="resources\shader\texshaderAlpha.frag">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
+    <None Include="resources\shader\texshaderOpaque.frag">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
+    <None Include="resources\shader\texshaderUv.vert">
+      <Filter>リソース ファイル\shader</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
