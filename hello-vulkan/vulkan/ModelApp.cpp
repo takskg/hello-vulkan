@@ -265,10 +265,16 @@ makeCommand(VkCommandBuffer command)
 	using namespace Microsoft::glTF;
 
 	//ユニフォームバッファを更新
+	static float32 angle = 0.0f;
+	angle += 0.5f;
+	if (angle > 360.0f)
+	{
+		angle -= 360.0f;
+	}
 	ShaderParameters shaderParam{};
 	shaderParam.mtxWorld = glm::identity<glm::mat4>();
-	shaderParam.mtxView = lookAtRH(vec3(0.0f, 1.5f, -1.0f), vec3(0.0f, 1.25f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
-	shaderParam.mtxProj = perspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.01f, 100.0f);
+	shaderParam.mtxView = glm::rotate(lookAtRH(vec3(0.0f, 1.5f, -1.0f), vec3(0.0f, 1.25f, 0.0f), vec3(0.0f, 1.0f, 0.0f)), static_cast<float32>(glm::radians(angle)), vec3(0.0f, 1.0f, 0.0f));
+	shaderParam.mtxProj = perspective(glm::radians(60.0f), 1280.0f / 720.0f, 0.01f, 100.0f);
 	{
 		auto memory = m_uniformBuffers[m_imageIndex].memory;
 		void* p;
